@@ -10,17 +10,18 @@ from utils import one_hot_actions, sigmoid_beta_schedule
 from tqdm import tqdm
 from einops import rearrange
 from torch import autocast
-assert torch.cuda.is_available()
-device = "cuda:0"
+# assert torch.cuda.is_available()
+# device = "cuda:0"
+device = "cpu"
 
 # load DiT checkpoint
-ckpt = torch.load("oasis500m.pt")
+ckpt = torch.load("oasis500m.pt", map_location="cpu")
 model = DiT_models["DiT-S/2"]()
 model.load_state_dict(ckpt, strict=False)
 model = model.to(device).eval()
 
 # load VAE checkpoint
-vae_ckpt = torch.load("vit-l-20.pt")
+vae_ckpt = torch.load("vit-l-20.pt", map_location="cpu")
 vae = VAE_models["vit-l-20-shallow-encoder"]()
 vae.load_state_dict(vae_ckpt)
 vae = vae.to(device).eval()
@@ -55,6 +56,7 @@ scaling_factor = 0.07843137255
 x = rearrange(x, "b t h w c -> (b t) c h w")
 H, W = x.shape[-2:]
 with torch.no_grad():
+    # WTH does this do? Just get mean?
     x = vae.encode(x * 2 - 1).mean * scaling_factor
 x = rearrange(x, "(b t) (h w) c -> b t c h w", t=n_prompt_frames, h=H//vae.patch_size, w=W//vae.patch_size)
 
@@ -94,8 +96,8 @@ for i in tqdm(range(n_prompt_frames, total_frames)):
 
         # get model predictions
         with torch.no_grad():
-            with autocast("cuda", dtype=torch.half):
-                v = model(x_curr, t, actions[:, start_frame : i + 1])
+            # with autocast("cuda", dtype=torch.half):
+            v = model(x_curr, t, actions[:, start_frame : i + 1])
 
         x_start = alphas_cumprod[t].sqrt() * x_curr - (1 - alphas_cumprod[t]).sqrt() * v
         x_noise = ((1 / alphas_cumprod[t]).sqrt() * x_curr - x_start) \

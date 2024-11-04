@@ -36,7 +36,7 @@ def rotate_half(x):
     x = torch.stack((-x2, x1), dim = -1)
     return rearrange(x, '... d r -> ... (d r)')
 
-@autocast('cuda', enabled = False)
+# @autocast('cuda', enabled = False)
 def apply_rotary_emb(freqs, t, start_index = 0, scale = 1., seq_dim = -2):
     dtype = t.dtype
 
@@ -283,7 +283,7 @@ class RotaryEmbedding(Module):
         all_freqs = broadcast_tensors(*all_freqs)
         return torch.cat(all_freqs, dim = -1)
 
-    @autocast('cuda', enabled = False)
+    # @autocast('cuda', enabled = False)
     def forward(
         self,
         t: Tensor,
