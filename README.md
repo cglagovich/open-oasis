@@ -1,8 +1,22 @@
+# Fork info
+This is my fork of open-oasis to add MLX support. Follow all normal instructions and run on mlx with the following:
+```
+python generate_mlx.py
+```
+
+### Timing results:
+The MLX version can be almost 5x faster than torch on CPU. I'm measuring on my 2020 M1 Macbook Pro.
+
+| backend | end-to-end generate 5 frames |
+|------------|-------|
+| torch cpu | 149.56 s |
+| mlx | 32.08 s |
+
+## Future work
+- [ ] Get time on M4 macbook
+- [ ] Add KV caching
+
 # Oasis 500M
-
-![](./media/arch.png)
-
-![](./media/thumb.png)
 
 Oasis is an interactive world model developed by [Decart](https://www.decart.ai/) and [Etched](https://www.etched.com/). Based on diffusion transformers, Oasis takes in user keyboard input and generates gameplay in an autoregressive manner. We release the weights for Oasis 500M, a downscaled version of the model, along with inference code for action-conditional frame generation. 
 
@@ -39,7 +53,3 @@ Use a custom image prompt:
 ```
 python generate.py --prompt-path <path to .png, .jpg, or .jpeg>
 ```
-The resulting video will be saved to `video.mp4`. Here's are some examples of a generation from this 500M model!
-
-![](media/sample_0.gif)
-![](media/sample_1.gif)

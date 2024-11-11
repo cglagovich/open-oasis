@@ -117,9 +117,6 @@ def main(args):
                 x_curr_mlx = mx.array(x_curr.cpu().numpy()) 
                 t_mlx = mx.array(t.cpu().numpy())
                 actions_mlx = mx.array(actions[:, start_frame : i + 1].cpu().numpy())
-                print(f"{x_curr_mlx.shape=}")
-                print(f"{t_mlx.shape=}")
-                print(f"{actions_mlx.shape=}")
                 v_mlx = model_mlx(x_curr_mlx, t_mlx, actions_mlx)
                 # Send to torch
                 v = torch.from_numpy(np.array(v_mlx))
