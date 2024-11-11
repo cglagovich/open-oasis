@@ -139,5 +139,34 @@ def test_rotary_embedding_rotate(dim, freqs_for, max_freq, t_shape):
     
     # Compare results
     assert_close(rotated_q_mlx, rotated_q_torch, atol=1e-3)
+
+@pytest.mark.parametrize("dim,freqs_for,max_freq", [
+    (64, "pixel", 256), # spatial_rotary_emb
+])
+@pytest.mark.parametrize("H,W", [
+    ((8, 16)),
+])
+def test_rotary_embedding_axial_freqs(dim, freqs_for, max_freq, H, W):
+    # Initialize both implementations
+    rope_torch = RotaryEmbeddingTorch(
+        dim=dim,
+        freqs_for=freqs_for,
+        max_freq=max_freq,
+    )
+    
+    rope_mlx = RotaryEmbeddingMLX(
+        dim=dim,
+        freqs_for=freqs_for,
+        max_freq=max_freq,
+    )
+
+    assert_close(rope_mlx.freqs, rope_torch.freqs, atol=1e-5)
+    
+    torch_axial_freqs = rope_torch.get_axial_freqs(H, W)
+    mlx_axial_freqs = rope_mlx.get_axial_freqs(H, W)
+    
+    # Compare results
+    assert_close(mlx_axial_freqs, torch_axial_freqs, atol=1e-4)
+
 if __name__ == "__main__":
     pytest.main([__file__]) 

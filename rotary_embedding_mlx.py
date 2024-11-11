@@ -112,3 +112,34 @@ class RotaryEmbedding(nn.Module):
         freqs = mx.repeat(freqs, 2, axis=-1)
         
         return freqs
+
+    def get_axial_freqs(self, *dims):
+        # Used by attention.py
+        all_freqs = []
+
+        for ind, dim in enumerate(dims):
+            # only allow pixel freqs for last two dimensions
+            use_pixel = (self.freqs_for == "pixel" or self.freqs_for == "spacetime") and ind >= len(dims) - 2
+            if use_pixel:
+                pos = mx.linspace(-1, 1, dim)
+            else:
+                pos = mx.arange(dim)
+
+            if self.freqs_for == "spacetime" and not use_pixel:
+                seq_freqs = self.forward(pos, self.time_freqs, seq_len=dim)
+            else:
+                seq_freqs = self.forward(pos, self.freqs, seq_len=dim)
+
+            # Reshape seq_freqs to have the correct number of dimensions before broadcasting
+            reshape_dims = [1] * len(dims)
+            reshape_dims[ind] = dim
+            seq_freqs = seq_freqs.reshape(*reshape_dims, -1)
+
+            # Broadcast to full dimension size before appending
+            expand_shape = [dims[i] if i != ind else dim for i in range(len(dims))]
+            expand_shape.append(seq_freqs.shape[-1])
+            seq_freqs = mx.broadcast_to(seq_freqs, expand_shape)
+            all_freqs.append(seq_freqs)
+
+        # Now arrays should have compatible shapes for concatenation
+        return mx.concatenate(all_freqs, axis=-1)
