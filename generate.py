@@ -16,19 +16,19 @@ import argparse
 from pprint import pprint
 import os
 
-assert torch.cuda.is_available()
-device = "cuda:0"
+# assert torch.cuda.is_available()
+device = "cpu"
 
 
 def main(args):
     torch.manual_seed(0)
-    torch.cuda.manual_seed(0)
+    # torch.cuda.manual_seed(0)
 
     # load DiT checkpoint
     model = DiT_models["DiT-S/2"]()
     print(f"loading Oasis-500M from oasis-ckpt={os.path.abspath(args.oasis_ckpt)}...")
     if args.oasis_ckpt.endswith(".pt"):
-        ckpt = torch.load(args.oasis_ckpt, weights_only=True)
+        ckpt = torch.load(args.oasis_ckpt, weights_only=True, map_location=device)
         model.load_state_dict(ckpt, strict=False)
     elif args.oasis_ckpt.endswith(".safetensors"):
         load_model(model, args.oasis_ckpt)
@@ -38,7 +38,7 @@ def main(args):
     vae = VAE_models["vit-l-20-shallow-encoder"]()
     print(f"loading ViT-VAE-L/20 from vae-ckpt={os.path.abspath(args.vae_ckpt)}...")
     if args.vae_ckpt.endswith(".pt"):
-        vae_ckpt = torch.load(args.vae_ckpt, weights_only=True)
+        vae_ckpt = torch.load(args.vae_ckpt, weights_only=True, map_location=device)
         vae.load_state_dict(vae_ckpt)
     elif args.vae_ckpt.endswith(".safetensors"):
         load_model(vae, args.vae_ckpt)
@@ -72,8 +72,8 @@ def main(args):
     scaling_factor = 0.07843137255
     x = rearrange(x, "b t c h w -> (b t) c h w")
     with torch.no_grad():
-        with autocast("cuda", dtype=torch.half):
-            x = vae.encode(x * 2 - 1).mean * scaling_factor
+        # with autocast("cuda", dtype=torch.half):
+        x = vae.encode(x * 2 - 1).mean * scaling_factor
     x = rearrange(x, "(b t) (h w) c -> b t c h w", t=n_prompt_frames, h=H // vae.patch_size, w=W // vae.patch_size)
     x = x[:, :n_prompt_frames]
 
@@ -107,8 +107,8 @@ def main(args):
 
             # get model predictions
             with torch.no_grad():
-                with autocast("cuda", dtype=torch.half):
-                    v = model(x_curr, t, actions[:, start_frame : i + 1])
+                # with autocast("cuda", dtype=torch.half):
+                v = model(x_curr, t, actions[:, start_frame : i + 1])
 
             x_start = alphas_cumprod[t].sqrt() * x_curr - (1 - alphas_cumprod[t]).sqrt() * v
             x_noise = ((1 / alphas_cumprod[t]).sqrt() * x_curr - x_start) / (1 / alphas_cumprod[t] - 1).sqrt()

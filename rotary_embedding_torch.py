@@ -43,9 +43,10 @@ def rotate_half(x):
     return rearrange(x, "... d r -> ... (d r)")
 
 
-@autocast("cuda", enabled=False)
-def apply_rotary_emb(freqs, t, start_index=0, scale=1.0, seq_dim=-2):
+# @autocast("cuda", enabled=False)
+def apply_rotary_emb(freqs, t, scale=1.0, seq_dim=-2):
     dtype = t.dtype
+    start_index = 0
 
     if t.ndim == 3:
         seq_len = t.shape[seq_dim]
@@ -67,18 +68,6 @@ def apply_rotary_emb(freqs, t, start_index=0, scale=1.0, seq_dim=-2):
     out = torch.cat((t_left, t_transformed, t_right), dim=-1)
 
     return out.type(dtype)
-
-
-# learned rotation helpers
-
-
-def apply_learned_rotations(rotations, t, start_index=0, freq_ranges=None):
-    if exists(freq_ranges):
-        rotations = einsum("..., f -> ... f", rotations, freq_ranges)
-        rotations = rearrange(rotations, "... r f -> ... (r f)")
-
-    rotations = repeat(rotations, "... n -> ... (n r)", r=2)
-    return apply_rotary_emb(rotations, t, start_index=start_index)
 
 
 # classes
@@ -260,6 +249,7 @@ class RotaryEmbedding(Module):
         return scale
 
     def get_axial_freqs(self, *dims):
+        # Used by attention.py
         Colon = slice(None)
         all_freqs = []
 
@@ -285,7 +275,7 @@ class RotaryEmbedding(Module):
         all_freqs = broadcast_tensors(*all_freqs)
         return torch.cat(all_freqs, dim=-1)
 
-    @autocast("cuda", enabled=False)
+    # @autocast("cuda", enabled=False)
     def forward(self, t: Tensor, freqs: Tensor, seq_len=None, offset=0):
         should_cache = self.cache_if_possible and not self.learned_freq and exists(seq_len) and self.freqs_for != "pixel" and (offset + seq_len) <= self.cache_max_seq_len
 
