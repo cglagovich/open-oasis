@@ -1,8 +1,9 @@
 # Fork info
-This is my fork of open-oasis to add MLX support. Follow all normal instructions and run on mlx with the following:
+This is my fork of open-oasis to add MLX support! Follow all normal instructions and run on mlx with the following:
 ```
 python generate_mlx.py
 ```
+So far this is a pretty basic MLX port - I'm sure there are some interesting perf optimizations I'm leaving on the table. Beyond those unknown MLX optimizations and quantization, I'm very interested in KV caching. You can see generation slow down dramatically with frame number which should be avoidable with caching. 
 
 ### Timing results:
 The MLX version can be almost 5x faster than torch on CPU. I'm measuring on my 2020 M1 Macbook Pro.
