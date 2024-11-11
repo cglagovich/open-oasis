@@ -104,7 +104,7 @@ class DiT(nn.Module):
         imgs = x.reshape(x.shape[0], c, h * p, w * p)
         return imgs
 
-    def __call__(self, x, t, external_cond=None, kv_cache=None):
+    def __call__(self, x, t, external_cond=None):
         """
         Forward pass of DiT.
         x: (B, T, C, H, W) tensor of spatial inputs
@@ -129,10 +129,9 @@ class DiT(nn.Module):
             c = c + self.external_cond(external_cond)
 
         # Apply transformer blocks
-        # if kv_cache is None:
-        #     kv_cache = [None] * len(self.blocks)
+
         for idx, block in enumerate(self.blocks):
-            x = block(x, c, kv_cache=None)
+            x = block(x, c)
 
         # Final layer and unpatchify
         x = self.final_layer(x, c)

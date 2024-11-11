@@ -39,7 +39,7 @@ class TemporalAxialAttention(nn.Module):
         self.rotary_emb = rotary_emb
         self.is_causal = is_causal
 
-    def __call__(self, x, kv_cache=None):
+    def __call__(self, x):
         B, T, H, W, D = x.shape
 
         # Generate Q, K, V
@@ -51,22 +51,11 @@ class TemporalAxialAttention(nn.Module):
         k = k.reshape(B, T, H, W, self.heads, self.head_dim).transpose(0,2,3,4,1,5).reshape(B*H*W, self.heads, T, self.head_dim)
         v = v.reshape(B, T, H, W, self.heads, self.head_dim).transpose(0,2,3,4,1,5).reshape(B*H*W, self.heads, T, self.head_dim)
 
-        if kv_cache is not None:
-            # I think rotaty embedding was getting messed up by q, k len 1
-            cache_len = kv_cache[0].shape[2]
-            q = mx.repeat(q, repeats=cache_len+1, axis=2)
-            k = mx.repeat(k, repeats=cache_len+1, axis=2)
         # Apply rotary embeddings (implementation would depend on MLX version)
         if self.rotary_emb is not None:
             q = self.rotary_emb.rotate_queries_or_keys(q, self.rotary_emb.freqs)
             k = self.rotary_emb.rotate_queries_or_keys(k, self.rotary_emb.freqs)
 
-        if kv_cache is not None:
-            q = q[:,:,-1:,...]
-            k = k[:,:,-1:,...]
-            k = mx.concatenate([kv_cache[0], k], axis=2)
-            v = mx.concatenate([kv_cache[1], v], axis=2)
-            # print(f"{k.shape=}")
 
         # Attention
         x = scaled_dot_product_attention(q, k, v, self.is_causal)

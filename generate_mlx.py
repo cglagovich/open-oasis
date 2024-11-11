@@ -88,8 +88,6 @@ def main(args):
     alphas_cumprod = torch.cumprod(alphas, dim=0)
     alphas_cumprod = rearrange(alphas_cumprod, "T -> T 1 1 1")
 
-    # TODO: Each noise step needs its own cache
-    kv_cache = [None] * ddim_noise_steps
     # sampling loop
     for i in tqdm(range(n_prompt_frames, total_frames)):
         chunk = torch.randn((B, 1, *x.shape[-3:]), device=device)
@@ -112,7 +110,6 @@ def main(args):
             t = t[:, start_frame:]
             t_next = t_next[:, start_frame:]
 
-            kv_cache = None
             # get model predictions
             with torch.no_grad():
                 # with autocast("cuda", dtype=torch.half):

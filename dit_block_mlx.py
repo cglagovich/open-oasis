@@ -91,7 +91,7 @@ class SpatioTemporalDiTBlock(nn.Module):
             nn.Linear(hidden_size, 6 * hidden_size, bias=True)
         )
 
-    def __call__(self, x, c, kv_cache=None):
+    def __call__(self, x, c):
         B, T, H, W, D = x.shape
 
         # Spatial block
@@ -119,7 +119,7 @@ class SpatioTemporalDiTBlock(nn.Module):
         # Temporal attention path
         x_norm1 = self.t_norm1(x)
         x_mod1 = modulate(x_norm1, t_shift_msa, t_scale_msa)
-        x_attn = self.t_attn(x_mod1, kv_cache=kv_cache)
+        x_attn = self.t_attn(x_mod1)
         x_gated = gate(x_attn, t_gate_msa)
         x = x + x_gated
 
@@ -130,4 +130,4 @@ class SpatioTemporalDiTBlock(nn.Module):
         x_gated = gate(x_mlp, t_gate_mlp)
         x = x + x_gated
 
-        return x#, kv_cache
+        return x
