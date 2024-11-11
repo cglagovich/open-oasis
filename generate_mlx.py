@@ -15,7 +15,9 @@ from safetensors.torch import load_model
 import argparse
 from pprint import pprint
 import os
-
+from dit_mlx import DiT_models as DiT_models_mlx
+import mlx.core as mx
+import numpy as np
 # assert torch.cuda.is_available()
 device = "cpu"
 
@@ -32,7 +34,10 @@ def main(args):
         model.load_state_dict(ckpt, strict=False)
     elif args.oasis_ckpt.endswith(".safetensors"):
         load_model(model, args.oasis_ckpt)
-    model = model.to(device).eval()
+    # model = model.to(device).eval()
+    model_mlx = DiT_models_mlx["DiT-S/2"]()
+    model_mlx.load_weights(model)
+    model_mlx = model_mlx.eval()
 
     # load VAE checkpoint
     vae = VAE_models["vit-l-20-shallow-encoder"]()
@@ -108,8 +113,16 @@ def main(args):
             # get model predictions
             with torch.no_grad():
                 # with autocast("cuda", dtype=torch.half):
-                v = model(x_curr, t, actions[:, start_frame : i + 1])
-
+                # Send inputs to mlx arrays
+                x_curr_mlx = mx.array(x_curr.cpu().numpy()) 
+                t_mlx = mx.array(t.cpu().numpy())
+                actions_mlx = mx.array(actions[:, start_frame : i + 1].cpu().numpy())
+                print(f"{x_curr_mlx.shape=}")
+                print(f"{t_mlx.shape=}")
+                print(f"{actions_mlx.shape=}")
+                v_mlx = model_mlx(x_curr_mlx, t_mlx, actions_mlx)
+                # Send to torch
+                v = torch.from_numpy(np.array(v_mlx))
             x_start = alphas_cumprod[t].sqrt() * x_curr - (1 - alphas_cumprod[t]).sqrt() * v
             x_noise = ((1 / alphas_cumprod[t]).sqrt() * x_curr - x_start) / (1 / alphas_cumprod[t] - 1).sqrt()
 
